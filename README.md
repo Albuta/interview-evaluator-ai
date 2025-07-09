@@ -31,7 +31,7 @@ A modern web app that analyzes interview audio responses and scores them based o
 
 ## 🖼️ Demo
 
-![screenshot](https://github.com/Albuta/interview-evaluator-ai/assets/demo-screenshot.png) <!-- Optional: Replace with real screenshot -->
+![screenshot](https://github.com/Albuta/interview-evaluator-ai/blob/main/assets/demo-screenshot.png) <!-- Optional: Replace with real screenshot -->
 
 ---
 
