@@ -1,0 +1,1 @@
+⚠️ This project uses mocked transcription to avoid paid API usage. For real Whisper integration, see comments in transcriber.js

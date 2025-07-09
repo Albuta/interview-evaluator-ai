@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Interview Evaluator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-start py-10 px-4">
+  <div class="w-full max-w-2xl bg-white shadow-lg rounded-lg p-6">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">🎤 AI Interview Evaluator</h1>
+
+    <form id="uploadForm" class="flex flex-col items-center space-y-4">
+      <label class="w-full cursor-pointer">
+        <span class="block text-sm font-medium text-gray-700 mb-1">Select Interview File (MP3/MP4/WAV):</span>
+        <input type="file" name="interview" accept="audio/*,video/*" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+      </label>
+      <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Upload & Evaluate</button>
+    </form>
+
+    <div id="result" class="mt-8 space-y-6"></div>
+
+    <button id="downloadBtn" style="display:none;" class="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition">⬇️ Download PDF Report</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const form = document.getElementById('uploadForm');
+    const resultDiv = document.getElementById('result');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let lastTranscript = '';
+    let lastEvaluation = {};
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      resultDiv.innerHTML = "<p class='text-blue-600 font-semibold'>⏳ Processing...</p>";
+
+      const res = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      const { transcript, evaluation } = data;
+      lastTranscript = transcript;
+      lastEvaluation = evaluation;
+
+      resultDiv.innerHTML = `
+        <div>
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">📝 Transcript</h3>
+          <div class="bg-gray-50 border border-gray-300 rounded p-4 text-sm text-gray-800">${transcript}</div>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-2">📊 Evaluation Scores</h3>
+          <div class="grid grid-cols-2 gap-4">
+            ${Object.entries(evaluation).filter(([k]) => k !== 'summary').map(([key, value]) => {
+              return `<div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded shadow">
+                        <h4 class="text-sm font-medium text-blue-700">${key.charAt(0).toUpperCase() + key.slice(1)}</h4>
+                        <p class="text-xl font-bold text-blue-900">${value}/10</p>
+                      </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-2">💡 Summary</h3>
+          <p class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded text-gray-700">${evaluation.summary}</p>
+        </div>
+      `;
+
+      downloadBtn.style.display = 'block';
+    };
+
+    downloadBtn.onclick = () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(16);
+      doc.text("AI Interview Evaluation Report", 20, 20);
+
+      doc.setFontSize(12);
+      doc.text("Transcript:", 20, 30);
+      doc.setFont("courier", "normal");
+      doc.text(doc.splitTextToSize(lastTranscript, 170), 20, 36);
+
+      let yStart = 36 + doc.splitTextToSize(lastTranscript, 170).length * 6 + 10;
+      doc.setFont("helvetica", "bold");
+      doc.text("Evaluation Scores:", 20, yStart);
+      doc.setFont("helvetica", "normal");
+      yStart += 10;
+
+      doc.text(`Communication: ${lastEvaluation.communication}/10`, 20, yStart);
+      doc.text(`Confidence: ${lastEvaluation.confidence}/10`, 20, yStart + 10);
+      doc.text(`English: ${lastEvaluation.english}/10`, 20, yStart + 20);
+      doc.text(`Overall: ${lastEvaluation.overall}/10`, 20, yStart + 30);
+
+      yStart += 50;
+      doc.setFont("helvetica", "italic");
+      doc.text("Summary:", 20, yStart);
+      doc.setFont("courier", "normal");
+      doc.text(doc.splitTextToSize(lastEvaluation.summary, 170), 20, yStart + 10);
+
+      doc.save("evaluation-report.pdf");
+    };
+  </script>
+</body>
+</html>
